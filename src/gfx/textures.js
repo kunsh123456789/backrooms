@@ -455,9 +455,18 @@ const T = {
     noiseFill(ctx, W, W, [92, 80, 68], 0.2, 8, 53);
     ctx.fillStyle = 'rgba(40,30,20,0.4)';
     for (let y = 0; y < W; y += 42) ctx.fillRect(0, y, W, 3);
-    for (let i = 0; i < 16; i++) {
+    for (let i = 0; i < 5; i++) {
       const x = rng.range(0, W), y = rng.range(0, W);
-      wrapDraw(W, W, x, y, (px, py) => stain(ctx, px, py, rng.range(10, 60), '50,35,20', rng.range(0.2, 0.4), rng, false));
+      wrapDraw(W, W, x, y, (px, py) => stain(ctx, px, py, rng.range(40, 120), '50,35,20', rng.range(0.08, 0.16), rng, false));
+    }
+    // rust runs
+    for (let i = 0; i < 8; i++) {
+      const x = rng.range(0, W), len = rng.range(60, 300), y = rng.range(0, W);
+      const g = ctx.createLinearGradient(0, y, 0, y + len);
+      g.addColorStop(0, 'rgba(90,45,15,0.3)');
+      g.addColorStop(1, 'rgba(90,45,15,0)');
+      ctx.fillStyle = g;
+      ctx.fillRect(x, y, rng.range(3, 14), len);
     }
     return toTex(c);
   },

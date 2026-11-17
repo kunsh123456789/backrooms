@@ -15,6 +15,7 @@ import { Director } from './director.js';
 import { Entities } from './entities/entities.js';
 import { VoidFall } from './gfx/voidfall.js';
 import { NOTES } from './lore.js';
+import { runEnding } from './endings.js';
 
 const tmpV = new THREE.Vector3();
 const tmpV2 = new THREE.Vector3();
@@ -127,6 +128,10 @@ export class Game {
     this.world.setLevel(level);
     this.levelTime = 0;
     this.cardShown = false;
+    this.fx.redTint = 0;
+    this.fx.staticAmt = 0;
+    this.fx.glitch = 0;
+    this.fx.smear = 0;
     this.alone = 0;
     const sp = spawn || level.spawn();
     this.player.place(sp.x, sp.y, sp.z, sp.yaw ?? 0);
@@ -209,13 +214,18 @@ export class Game {
       yield 2.5;
     } else {
       fx.fadeColor.setRGB(0, 0, 0);
+      if (style === 'stairs') {
+        // footsteps going down, echoing
+        for (let i = 0; i < 14; i++) a.play('step_concrete', { gain: 0.45 - i * 0.02, when: 0.3 + i * 0.42, reverb: 1.2, bus: 'ui', rate: 0.95 + Math.random() * 0.1 });
+        a.play('doorslam', { gain: 0.4, when: 0.1, reverb: 1, bus: 'ui' });
+      }
       a.fadeWorld(0, 1);
       for (let t = 0; t < 1; t += 0.05) {
         fx.fade = t;
         yield 0.05;
       }
       fx.fade = 1;
-      yield 1.2;
+      yield style === 'stairs' ? 5.5 : 1.2;
     }
     this.loadLevel(id, { spawn });
     a.setMuffle(20000, 0.5);
@@ -236,10 +246,15 @@ export class Game {
 
   goMenu() {
     this.state = 'menu';
+    this._endingBusy = false;
+    this.endingUpdate = null;
+    this.player.frozen = false;
     this.paused = false;
     this.seq = null;
     this.input.unlock();
     this.loadLevel('level0', { menu: true, spawn: { x: 1, y: 0, z: 0, yaw: -Math.PI / 2 } });
+    const lay0 = this.world.layouts.get('0,0');
+    this.level.menuZ = lay0 && lay0.anomaly ? lay0.oz + lay0.anomaly.r * 2 + 1 : 1;
     this.menuCam = { t: 0 };
     this.fx.fade = 1;
     this.fx.fadeColor.setRGB(0, 0, 0);
@@ -265,7 +280,7 @@ export class Game {
     this.loadLevel('house');
     this.input.lock();
     this.seq = { kind: 'fadein', gen: this._fadeIn(3), wait: 0 };
-    setTimeout(() => this.ui.hint('WASD move · mouse look · E interact · F flashlight · TAB inventory', 7), 2500);
+    setTimeout(() => this.ui.hint('WASD move · SHIFT run · C crouch · E interact · F flashlight · TAB pockets', 7), 2500);
   }
 
   continueGame() {
@@ -468,14 +483,14 @@ export class Game {
     const m = this.menuCam;
     m.t += dt;
     const p = this.player;
-    p.pos.x = 1 + m.t * 0.45;
+    p.pos.x = 2 + (m.t * 0.4) % 26;
     p.pos.z = 0;
     const lay = this.level;
     const cam = this.camera;
     const zc = lay.menuZ ?? 0;
     cam.position.set(p.pos.x, 1.55 + Math.sin(m.t * 0.7) * 0.01, zc + Math.sin(m.t * 0.13) * 0.15);
     cam.rotation.order = 'YXZ';
-    cam.rotation.set(-0.02 + (valueNoise2(m.t * 0.2, 3, 1) - 0.5) * 0.02, -Math.PI / 2 + Math.sin(m.t * 0.05) * 0.25, (valueNoise2(m.t * 0.2, 9, 1) - 0.5) * 0.01);
+    cam.rotation.set(-0.02 + (valueNoise2(m.t * 0.2, 3, 1) - 0.5) * 0.02, -Math.PI / 2 + Math.sin(m.t * 0.05) * 0.12, (valueNoise2(m.t * 0.2, 9, 1) - 0.5) * 0.01);
     this.world.update(cam.position.x, cam.position.z);
     this.lights.update(dt);
     this.audio.updateListener(cam);
@@ -483,10 +498,7 @@ export class Game {
     this.audio.setRoomSize(10);
     this.fx.fade = damp(this.fx.fade, 0, 0.8, dt);
     this.fx.track = 0.25 + 0.15 * Math.sin(this.time * 0.3);
-    if (m.t > 140) {
-      m.t = 0;
-      this.post.snap = true;
-    }
+    if ((m.t * 0.4) % 26 < 0.02) this.post.snap = true;
   }
 
   _playFrame(dt) {
@@ -714,9 +726,9 @@ export class Game {
   }
 
   // ---------------- endings ----------------
-  ending(kind) {
-    if (this.state === 'ending' && kind !== 'escape') return;
-    import('./endings.js').then((m) => m.runEnding(this, kind));
+  ending(kind, opts = {}) {
+    if (this.state === 'ending') return;
+    runEnding(this, kind, opts);
   }
 
   // ---------------- render ----------------

@@ -52,6 +52,17 @@ export class Level0 {
       ambience: 'level0',
       card: { name: 'LEVEL 0', title: 'The Lobby', delay: 80 },
       sanityAlone: 1,
+      director: {
+        sounds: ['doorslam', 'thump', 'drag', 'knock', 'voice_murmur', 'footsteps', 'creak', 'thump'],
+        lightEvents: true,
+        humDrop: true,
+        glimpse: ['faceling', 'smiler'],
+        encounter: ['smiler'],
+        glimpseAfter: 660,
+        encounterAfter: 1100,
+        minGap: 55,
+        tensionTime: 420,
+      },
     };
   }
 
@@ -453,7 +464,8 @@ export class Level0 {
     }
   }
 
-  surfaceAt(x, z, world) {
+  surfaceAt(x, z, world, zone) {
+    if (zone && zone.surf) return zone.surf;
     const [cx, cz] = world.chunkOf(x, z);
     const lay = world.layouts.get(cx + ',' + cz);
     if (!lay) return 'carpet';

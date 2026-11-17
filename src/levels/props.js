@@ -191,3 +191,37 @@ export function dynMat(map, lightSample, opts = {}) {
   if (lightSample) mat.uniforms.uObjLight.value.copy(lightSample);
   return mat;
 }
+
+/** A static door slab set flush into a wall face. */
+export function doorSlab(mb, key, x, z, nx, nz, w = 0.9, h = 2.05, frameKey = 'p_wood') {
+  const tx = -nz, tz = nx;
+  const px = x + nx * 0.02, pz = z + nz * 0.02;
+  const hw = Math.abs(tx) > 0.5 ? w / 2 : 0.03, hd = Math.abs(tz) > 0.5 ? w / 2 : 0.03;
+  mb.box(key, px - hw, 0, pz - hd, px + hw, h, pz + hd, { faces: 'xXzZY', step: 0.5, vstep: 0.7 });
+  const fr = (o, y0, ww, hh) => {
+    const cx = x + tx * o + nx * 0.04, cz = z + tz * o + nz * 0.04;
+    const a = Math.abs(tx) > 0.5 ? ww / 2 : 0.04, b = Math.abs(tz) > 0.5 ? ww / 2 : 0.04;
+    mb.box(frameKey, cx - a, y0, cz - b, cx + a, y0 + hh, cz + b, { faces: 'xXzZYy' });
+  };
+  fr(-w / 2 - 0.05, 0, 0.1, h + 0.08);
+  fr(w / 2 + 0.05, 0, 0.1, h + 0.08);
+  fr(0, h, w + 0.2, 0.08);
+  // handle
+  const hx = x + tx * (w / 2 - 0.12) + nx * 0.07, hz = z + tz * (w / 2 - 0.12) + nz * 0.07;
+  mb.box('p_metal', hx - 0.03, 0.98, hz - 0.03, hx + 0.03, 1.04, hz + 0.03, { faces: 'xXzZYy' });
+}
+
+/** Balloons tied to something: separate meshes (a few spheres). */
+export function balloons(extra, x, y, z, n, rng, light) {
+  const cols = [[0.9, 0.2, 0.3], [0.2, 0.4, 0.9], [0.95, 0.75, 0.15], [0.3, 0.8, 0.45], [0.7, 0.3, 0.85]];
+  const geo = balloons._g || (balloons._g = new THREE.SphereGeometry(0.17, 12, 10).scale(1, 1.18, 1));
+  for (let i = 0; i < n; i++) {
+    const c = cols[Math.floor(rng.next() * cols.length)];
+    const mat = worldMaterial({ map: tex('white'), baked: false, tint: c, emissive: [c[0] * 0.08, c[1] * 0.08, c[2] * 0.08] });
+    mat.uniforms.uObjLight.value.copy(light);
+    const m = new THREE.Mesh(geo, mat);
+    m.position.set(x + (rng.next() - 0.5) * 0.4, y + rng.next() * 0.4, z + (rng.next() - 0.5) * 0.4);
+    m.userData.bob = rng.next() * 6;
+    extra.push(m);
+  }
+}
