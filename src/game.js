@@ -510,7 +510,7 @@ export class Game {
 
     // look
     const [mx, my] = input.consumeMouse();
-    if (input.locked && !this.ui.modal) p.look(mx, my, set.get('sensitivity'), set.get('invertY'));
+    if ((input.locked || input.lockFailed) && !this.ui.modal) p.look(mx, my, set.get('sensitivity'), set.get('invertY'));
 
     // ui keys
     if (!this.ui.modal && !p.frozen) {

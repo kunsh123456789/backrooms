@@ -22,8 +22,13 @@ export class Input {
       this.keys.delete(e.code);
     });
     window.addEventListener('blur', () => this.keys.clear());
+    // Fallback for embedded previews where pointer lock is unavailable: drag to look.
+    this.dragging = false;
+    this.lockFailed = false;
+    canvas.addEventListener('mousedown', () => (this.dragging = true));
+    window.addEventListener('mouseup', () => (this.dragging = false));
     document.addEventListener('mousemove', (e) => {
-      if (!this.locked) return;
+      if (!this.locked && !(this.lockFailed && this.dragging)) return;
       // Guard against browser spikes on lock acquisition.
       if (Math.abs(e.movementX) > 400 || Math.abs(e.movementY) > 400) return;
       this.mouseDX += e.movementX;
@@ -35,6 +40,7 @@ export class Input {
     });
     document.addEventListener('pointerlockerror', () => {
       this.locked = false;
+      this.lockFailed = true;
     });
   }
 
@@ -42,9 +48,9 @@ export class Input {
     if (document.pointerLockElement === this.canvas) return;
     try {
       const p = this.canvas.requestPointerLock();
-      if (p && p.catch) p.catch(() => {});
+      if (p && p.catch) p.catch(() => (this.lockFailed = true));
     } catch (e) {
-      /* ignore */
+      this.lockFailed = true;
     }
   }
 
