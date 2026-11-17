@@ -46,6 +46,7 @@ export class Level37 {
       ambience: 'level37',
       card: { name: 'LEVEL 37', title: 'The Poolrooms', delay: 70 },
       sanityAlone: 0.7,
+      noEntities: true,
       rumble: true,
       voidTex: ['pooltile', 'white'],
       director: { sounds: ['splash', 'whisper', 'drip'], minGap: 150, tensionTime: 900 },

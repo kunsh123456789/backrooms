@@ -98,6 +98,7 @@ export class Director {
     this.history.push({ kind: tier, t: this.t });
     switch (tier) {
       case 'sound': {
+        if (!c.sounds?.length) return false;
         const s = rng.pick(c.sounds);
         const opts = { minD: 22, maxD: 55, gain: rng.range(0.3, 0.6), rate: rng.range(0.85, 1.05) };
         if (s.startsWith('voice')) {
@@ -123,12 +124,14 @@ export class Director {
         this.fear = 0.3;
         return true;
       case 'glimpse': {
+        if (!c.glimpse?.length) return false;
         const type = rng.pick(c.glimpse);
         const ok = g.entities.spawn(type, 'glimpse');
         if (ok) this.lastGlimpse = this.t;
         return ok;
       }
       case 'encounter': {
+        if (!c.encounter?.length) return false;
         const type = rng.pick(c.encounter);
         const ok = g.entities.spawn(type, 'encounter');
         if (ok) this.lastEncounter = this.t;

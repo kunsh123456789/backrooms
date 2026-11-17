@@ -150,7 +150,7 @@ export class Entities {
   /** A hallucination at the edge of vision that's gone when you look. */
   peripheral() {
     const g = this.game;
-    if (g.level?.config?.noEntities && g.levelId !== 'level37') return;
+    if (g.level?.config?.noEntities) return;
     const side = this.rng.sign();
     const f = g.camera.getWorldDirection(tmp2);
     const a = Math.atan2(f.z, f.x) + side * this.rng.range(0.75, 0.95);
