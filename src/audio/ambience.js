@@ -365,6 +365,36 @@ export const EMIT = {
     o.start();
     return () => o.stop();
   },
+  pit(ctx, out, a) {
+    // a deep, slow draft rising out of a hole
+    const s = a.loopSource('loop_brown');
+    const lp = ctx.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.value = 220;
+    const g = ctx.createGain();
+    g.gain.value = 0.5;
+    const lfo = ctx.createOscillator();
+    lfo.frequency.value = 0.13;
+    const lg = ctx.createGain();
+    lg.gain.value = 0.3;
+    lfo.connect(lg).connect(g.gain);
+    s.connect(lp).connect(g).connect(out);
+    s.start();
+    lfo.start();
+    return () => { s.stop(); lfo.stop(); };
+  },
+  clock(ctx, out, a) {
+    // a clock ticking somewhere behind a door: home
+    const iv = setInterval(() => {
+      const s = ctx.createBufferSource();
+      s.buffer = a.buffer('clocktick');
+      const g = ctx.createGain();
+      g.gain.value = 0.9;
+      s.connect(g).connect(out);
+      s.start();
+    }, 1000);
+    return () => clearInterval(iv);
+  },
   hum(ctx, out, a) {
     // a faint fluorescent hum coming from inside a wall
     const g = ctx.createGain();

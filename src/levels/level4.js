@@ -42,7 +42,8 @@ export class Level4 {
       reverb: { small: 0.35, medium: 0.9, large: 1.8, damp: 4500, dampEnd: 1200, wet: 0.6 },
       hum: { bed: 0.02, voices: 0.045, pitch: 30, bright: 2000 },
       ambience: 'level4',
-      card: { name: 'LEVEL 4', title: 'Abandoned Office', delay: 70 },
+      card: { name: 'LEVEL 4', title: 'Abandoned Office', delay: 30, hint: 'One of the windows is open. You can feel the draft.' },
+      noclip: { to: 'level37', after: 60, bump: 0.05, bumpMax: 0.35, ramp: 400, fall: 0.004, fallAfter: 150 },
       sanityAlone: 0.8,
       voidTex: ['officewall', 'officecarpet', 'cubicle'],
       director: {
@@ -162,12 +163,12 @@ export class Level4 {
     const lt = this.game.levelTime || 0;
     const winWalls = walls.filter((w) => w.kind === WINDOW);
     let openWin = null;
-    if (!spawnChunk && winWalls.length && lt > 100 && rng.chance(Math.min(0.6, 0.25 + (lt - 100) / 600))) {
+    if (!spawnChunk && winWalls.length && rng.chance(0.5)) {
       const w = rng.pick(winWalls);
       openWin = { w, idx: rng.int(w.a, w.b + 1) };
     }
     let party = null;
-    if (!spawnChunk && lt > 150 && rng.chance(0.06)) {
+    if (!spawnChunk && rng.chance(0.06) && lt >= 0) {
       const plain = walls.filter((w) => w.kind === WALL && w.b - w.a >= 1);
       if (plain.length) {
         const w = rng.pick(plain);
@@ -250,7 +251,7 @@ export class Level4 {
         nx = w.line < N && g.solid[idx * N + w.line] ? -1 : 1;
       }
       // a breeze, and the faint smell of chlorine
-      emitters.push({ x, y: 1.5, z, build: EMIT.vent, opts: { range: 9, gain: 0.5 } });
+      emitters.push({ x, y: 1.5, z, build: EMIT.vent, opts: { range: 20, gain: 0.8 } });
       emitters.push({ x: x - nx * 2, y: 1.2, z: z - nz * 2, build: (ctx, out, a) => {
         const s = a.loopSource('loop_brown');
         const bp = ctx.createBiquadFilter();

@@ -60,6 +60,7 @@ html, body { margin: 0; height: 100%; background: #000; overflow: hidden; color:
 .card.show { opacity: 0.75; }
 .card .n { font-size: 30px; letter-spacing: 0.3em; }
 .card .t { font-size: 18px; opacity: 0.7; margin-top: 4px; letter-spacing: 0.2em; }
+.card .h { font-size: 15px; opacity: 0.55; margin-top: 14px; letter-spacing: 0.08em; text-transform: none; }
 .hint { position: absolute; left: 0; right: 0; bottom: 5vh; text-align: center; font-size: 15px; opacity: 0; transition: opacity 2s ease; letter-spacing: 0.15em; }
 .hint.show { opacity: 0.4; }
 .prompt { position: absolute; left: 0; right: 0; top: 58%; text-align: center; font-size: 17px; opacity: 0; transition: opacity 0.4s; letter-spacing: 0.12em; }

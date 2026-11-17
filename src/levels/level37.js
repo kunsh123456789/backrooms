@@ -6,7 +6,8 @@ import { FLICKER } from '../gfx/lights.js';
 import { box } from '../world/world.js';
 import { Grid, applyBorders, bspRooms, ensureConnected, wallBoxes } from './grid.js';
 import { propMaterials, doorSlab } from './props.js';
-import { spawnItems } from './common.js';
+import { spawnItems, spawnEmitters } from './common.js';
+import { EMIT } from '../audio/ambience.js';
 
 // LEVEL 37 — "The Poolrooms". White tile, still turquoise water, soft daylight
 // from nowhere. Nothing here wants anything. Peaceful, and deeply wrong.
@@ -44,7 +45,7 @@ export class Level37 {
       reverb: { small: 2.2, medium: 4.5, large: 7.5, damp: 8000, dampEnd: 2500, wet: 1.5 },
       hum: { bed: 0, voices: 0 },
       ambience: 'level37',
-      card: { name: 'LEVEL 37', title: 'The Poolrooms', delay: 70 },
+      card: { name: 'LEVEL 37', title: 'The Poolrooms', delay: 35, hint: 'A plain wooden door. Listen for a clock ticking.' },
       sanityAlone: 0.7,
       noEntities: true,
       rumble: true,
@@ -109,7 +110,7 @@ export class Level37 {
     // the door home
     let door = null;
     const lt = this.game.levelTime || 0;
-    if (!spawnChunk && lt > 220 && rng.chance(Math.min(0.6, 0.18 + (lt - 220) / 900))) {
+    if (!spawnChunk && lt > 30 && rng.chance(0.32)) {
       const cand = walls.filter((w) => w.b - w.a >= 1);
       if (cand.length) {
         const w = rng.pick(cand);
@@ -126,7 +127,7 @@ export class Level37 {
 
   build(lay, mb, world) {
     const { ox, oz, grid: g } = lay;
-    const extra = [], inter = [], zones = [];
+    const extra = [], inter = [], zones = [], emitters = [];
     for (let z = 0; z < N; z++)
       for (let x = 0; x < N; x++) {
         const c = g.cell[z * N + x];
@@ -175,9 +176,10 @@ export class Level37 {
       const d = lay.door;
       doorSlab(mb, 'p_wood', d.x, d.z, d.nx, d.nz, 0.85, 2.0, 'p_white');
       inter.push({ x: d.x + d.nx * 0.3, y: 1.1, z: d.z + d.nz * 0.3, r: 2.2, prompt: 'Open the door', use: (game) => game.ending('escape') });
+      emitters.push({ x: d.x - d.nx * 0.5, y: 1.6, z: d.z - d.nz * 0.5, build: EMIT.clock, opts: { range: 24, gain: 0.5, reverb: 1 } });
     }
     spawnItems(lay.items, world, this.game, extra, inter);
-    return { extra, interactables: inter, zones };
+    return { extra, interactables: inter, zones, dispose: spawnEmitters(emitters, this.game) };
   }
 
   surfaceAt() {

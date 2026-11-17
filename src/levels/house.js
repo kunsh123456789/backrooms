@@ -51,6 +51,7 @@ export class House {
       rumble: false,
       noSanity: true,
       card: null,
+      noclip: opts.wrong ? null : { to: 'level0', after: 35, bump: 0.3, bumpMax: 1, ramp: 90, fall: 0.008, fallAfter: 80, message: "You've noclipped out of reality." },
       voidTex: ['housewall', 'woodfloor', 'housecarpet', 'wallpaper0', 'carpet0', 'ceiling0'],
     };
     this.noclipped = false;
@@ -399,15 +400,6 @@ export class House {
       this.kitchenLoops++;
       if (this.kitchenLoops === 1) game.director.note('kitchen');
     }
-    if (this.noclipped) return;
-    // the noclip: pushing into a wall long enough, once the house has had its minute
-    const t = game.levelTime;
-    const pushNeeded = t > 240 ? 0.7 : t > 60 ? 1.3 : 99;
-    const corner = p.pos.x > 10.3 && p.pos.z > 4 && p.pos.z < 5.3;
-    if ((p.pushT > pushNeeded || (corner && p.pushT > 0.5 && t > 20)) && !game.seq) {
-      this.noclipped = true;
-      game.seq = { kind: 'noclip', gen: this._noclip(game), wait: 0, noPause: true };
-    }
   }
 
   _doorsInView(game) {
@@ -423,70 +415,6 @@ export class House {
       if (fr.intersectsSphere(sphere)) return true;
     }
     return false;
-  }
-
-  *_noclip(game) {
-    const p = game.player;
-    const a = game.audio;
-    const fx = game.fx;
-    this.noclipping = true;
-    p.frozen = true;
-    const fwd = game.camera.getWorldDirection(new THREE.Vector3());
-    fwd.y = 0;
-    fwd.normalize();
-    G.uJitterCenter.value.set(p.pos.x + fwd.x, 1.3, p.pos.z + fwd.z);
-    a.play('static', { gain: 0.15, bus: 'ui' });
-    // geometry jitters, textures stretch, sound warps and drops out
-    for (let t = 0; t < 3.2; t += 0.05) {
-      const k = t / 3.2;
-      G.uJitter.value = k * k * 1.4;
-      G.uStretch.value = k * k * 0.5;
-      fx.glitch = k * 1.2;
-      fx.track = k;
-      a.setMuffle(18000 - k * 17000, 0.1);
-      if (Math.random() < k * 0.3) a.play('static', { gain: 0.05 + k * 0.15, bus: 'ui', rate: 0.5 + Math.random() });
-      if (Math.random() < 0.08) a.play('clocktick', { gain: 0.2, rate: 0.3 + Math.random() * 0.5, bus: 'ui' });
-      yield 0.05;
-    }
-    a.fadeWorld(0, 0.4);
-    // the camera slides into the wall
-    const start = p.camOffset.clone();
-    for (let t = 0; t < 1.6; t += 0.03) {
-      const k = t / 1.6;
-      p.camOffset.copy(start).addScaledVector(fwd, k * k * 1.6);
-      p.camOffset.y = -k * 0.3;
-      yield 0.03;
-    }
-    G.uJitter.value = 0;
-    G.uStretch.value = 0;
-    fx.glitch = 0;
-    fx.track = 0;
-    p.camOffset.set(0, 0, 0);
-    // and falls
-    a.play('whoosh', { gain: 0.35, bus: 'ui', rate: 0.7 });
-    game.voidFall.begin(this.config.voidTex);
-    fx.smear = 0.9;
-    yield 4.2;
-    fx.fade = 1;
-    fx.fadeColor.setRGB(0, 0, 0);
-    game.voidFall.end();
-    fx.smear = 0;
-    a.setMuffle(20000, 0.1);
-    // total silence and black
-    yield 4.0;
-    game.state = 'play';
-    game.loadLevel('level0');
-    p.frozen = false;
-    // the first sound is the hum
-    a.fadeWorld(1, 2.5);
-    for (let t = 0; t < 5; t += 0.05) {
-      fx.fade = 1 - t / 5;
-      yield 0.05;
-    }
-    fx.fade = 0;
-    this.noclipping = false;
-    yield 10;
-    if (game.levelId === 'level0') game.ui.showMessage("You've noclipped out of reality.", 7);
   }
 
   _wrongUpdate(dt, game) {

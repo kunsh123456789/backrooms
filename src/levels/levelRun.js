@@ -41,7 +41,7 @@ export class LevelRun {
       reverb: { small: 0.8, medium: 1.6, large: 2.8, damp: 5000, dampEnd: 1200, metallic: 0.3, wet: 0.9 },
       hum: { bed: 0, voices: 0 },
       ambience: 'levelRun',
-      card: { name: 'LEVEL !', title: 'Run For Your Life', delay: 3.5 },
+      card: { name: 'LEVEL !', title: 'Run For Your Life', delay: 3.5, hint: 'Run toward the light.' },
       staminaMul: 1.7,
       sanityAlone: 0.5,
       rumble: false,

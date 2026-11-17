@@ -47,7 +47,8 @@ export class Level2 {
       reverb: { small: 0.6, medium: 1.4, large: 2.6, damp: 6000, dampEnd: 1800, metallic: 0.8, wet: 1.0 },
       hum: { bed: 0.012, voices: 0.05, pitch: -500, bright: 900 },
       ambience: 'level2',
-      card: { name: 'LEVEL 2', title: 'Pipe Dreams', delay: 60 },
+      card: { name: 'LEVEL 2', title: 'Pipe Dreams', delay: 30, hint: 'Listen for the drone. A red door waits at the end of a tunnel.' },
+      noclip: { to: 'levelRun', after: 60, bump: 0.05, bumpMax: 0.35, ramp: 400, fall: 0.004, fallAfter: 150 },
       sanityAlone: 1.2,
       voidTex: ['tunnelwall', 'rust', 'grate'],
       director: {
@@ -129,7 +130,8 @@ export class Level2 {
     // red door at a dead end, once you've been down here a while
     let red = null;
     const lt = this.game.levelTime || 0;
-    if (!spawnChunk && lt > 120 && rng.chance(Math.min(0.55, 0.2 + (lt - 120) / 700))) {
+    if (!spawnChunk && rng.chance(0.42)) {
+      void lt;
       const dead = [];
       for (let z = 1; z < N - 1; z++) for (let x = 1; x < N - 1; x++) if (openCount(g, x, z) === 1) dead.push([x, z]);
       if (dead.length) {
@@ -181,7 +183,7 @@ export class Level2 {
       const tx = -r.nz, tz = r.nx;
       const lx = r.x + r.nx * 0.08, lz = r.z + r.nz * 0.08;
       mb.box('redlamp', lx - 0.08 - Math.abs(tx) * 0.04, 2.28, lz - 0.08 - Math.abs(tz) * 0.04, lx + 0.08, 2.4, lz + 0.08, { faces: 'xXzZy' });
-      emitters.push({ x: r.x - r.nx * 1, y: 1.2, z: r.z - r.nz * 1, build: EMIT.drone, opts: { range: 12, gain: 0.5 } });
+      emitters.push({ x: r.x - r.nx * 1, y: 1.2, z: r.z - r.nz * 1, build: EMIT.drone, opts: { range: 26, gain: 0.7 } });
       inter.push({ x: r.x + r.nx * 0.3, y: 1.1, z: r.z + r.nz * 0.3, r: 2.2, prompt: 'Open the red door', use: (game) => game.transitionTo('levelRun', { style: 'fade' }) });
     }
     spawnItems(lay.items, world, this.game, extra, inter);

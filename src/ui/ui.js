@@ -35,11 +35,11 @@ export class UI {
     clearTimeout(this._msgT);
     this._msgT = setTimeout(() => this.message.classList.remove('show'), dur * 1000);
   }
-  levelCard(name, title) {
-    this.card.innerHTML = `<div class="n">${name}</div><div class="t">${title}</div>`;
+  levelCard(name, title, hint) {
+    this.card.innerHTML = `<div class="n">${name}</div><div class="t">${title}</div>${hint ? `<div class="h">${hint}</div>` : ''}`;
     this.card.classList.add('show');
     clearTimeout(this._cardT);
-    this._cardT = setTimeout(() => this.card.classList.remove('show'), 9000);
+    this._cardT = setTimeout(() => this.card.classList.remove('show'), 12000);
   }
   hint(text, dur = 6) {
     this.hintEl.textContent = text;

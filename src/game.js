@@ -127,6 +127,8 @@ export class Game {
     this.levelId = id;
     this.world.setLevel(level);
     this.levelTime = 0;
+    this.player.camOffset.set(0, 0, 0);
+    this.player.lookFrozen = false;
     this.cardShown = false;
     this.fx.redTint = 0;
     this.fx.staticAmt = 0;
@@ -535,6 +537,7 @@ export class Game {
     // light at the player's eyes (occlusion-aware), drives sanity and exposure hints
     this._sampleLocalLight(dt);
 
+    this._noclipCheck(dt);
     this.director.update(dt);
     this.entities.update(dt);
     this._updateFlashlight(dt);
@@ -549,7 +552,7 @@ export class Game {
     const card = this.level.config.card;
     if (card && !this.cardShown && this.levelTime > card.delay) {
       this.cardShown = true;
-      this.ui.levelCard(card.name, card.title);
+      this.ui.levelCard(card.name, card.title, card.hint);
     }
   }
 
@@ -563,6 +566,87 @@ export class Game {
     const s = this.lights.sample(p.pos.x, hy, p.pos.z, tmpV, (x0, z0, x1, z1) => !w.lineOfSight(x0, z0, x1, z1, 2.0));
     const lum = s.x * 0.3 + s.y * 0.5 + s.z * 0.2 + (this.level.config.ambientLum ?? 0);
     this.localLight = lum;
+  }
+
+  /**
+   * Random noclips. Walking into a wall can take you straight through it; walking
+   * along, the floor can simply stop being there. No warning, no effects.
+   */
+  _noclipCheck(dt) {
+    const nc = this.level.config.noclip;
+    const p = this.player;
+    const pushing = p.pushT > 0.1;
+    const fresh = pushing && !this._wasPushing;
+    this._wasPushing = pushing;
+    if (!nc || this.seq || p.frozen || this.ui.modal || this.levelTime < nc.after) return;
+    const k = Math.min(1, (this.levelTime - nc.after) / (nc.ramp ?? 600));
+    if (fresh && Math.random() < nc.bump + (nc.bumpMax - nc.bump) * k) {
+      this.noclip('wall');
+      return;
+    }
+    if (nc.fall && p.moving && p.onGround && p.inWater < 0.05 && this.levelTime > (nc.fallAfter ?? nc.after)) {
+      if (Math.random() < nc.fall * (0.3 + k) * dt) this.noclip('floor');
+    }
+  }
+
+  noclip(kind) {
+    const nc = this.level.config.noclip;
+    if (!nc || this.seq) return;
+    this.seq = { kind: 'transition', noPause: true, wait: 0, gen: this._noclipSeq(kind, nc.to, nc.message) };
+  }
+
+  *_noclipSeq(kind, to, message) {
+    const p = this.player, a = this.audio, fx = this.fx;
+    p.frozen = true;
+    p.lookFrozen = true;
+    const fwd = this.camera.getWorldDirection(new THREE.Vector3());
+    fwd.y = 0;
+    fwd.normalize();
+    // the sound just stops
+    a.fadeWorld(0, 0.3);
+    a.setMuffle(350, 0.2);
+    if (kind === 'wall') {
+      // you keep walking and the wall isn't there
+      for (let t = 0; t < 0.9; t += 0.03) {
+        const k = t / 0.9;
+        p.camOffset.copy(fwd).multiplyScalar(0.3 + k * 1.6);
+        p.camOffset.y = -k * k * 0.6;
+        yield 0.03;
+      }
+    } else {
+      // the floor stops being there
+      for (let t = 0; t < 0.7; t += 0.03) {
+        const k = t / 0.7;
+        p.camOffset.set(fwd.x * k * 0.4, -k * k * 2.6, fwd.z * k * 0.4);
+        p.pitch = Math.max(-0.5, p.pitch - 0.02);
+        yield 0.03;
+      }
+    }
+    p.camOffset.set(0, 0, 0);
+    this.voidFall.begin(this.level.config.voidTex || ['wallpaper0', 'carpet0', 'ceiling0']);
+    fx.smear = 0.85;
+    a.play('whoosh', { gain: 0.25, bus: 'ui', rate: 0.75 });
+    yield 3.2;
+    fx.fade = 1;
+    fx.fadeColor.setRGB(0, 0, 0);
+    this.voidFall.end();
+    fx.smear = 0;
+    yield 3.0; // black, and nothing at all
+    this.state = 'play';
+    this.loadLevel(to);
+    p.frozen = false;
+    p.lookFrozen = false;
+    a.setMuffle(20000, 0.1);
+    a.fadeWorld(1, 2.5);
+    for (let t = 0; t < 4; t += 0.05) {
+      fx.fade = 1 - t / 4;
+      yield 0.05;
+    }
+    fx.fade = 0;
+    if (message) {
+      yield 10;
+      if (this.levelId === to) this.ui.showMessage(message, 7);
+    }
   }
 
   toggleFlashlight() {

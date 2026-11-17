@@ -50,7 +50,8 @@ export class Level0 {
       reverb: { small: 0.35, medium: 0.9, large: 2.2, damp: 4500, dampEnd: 900, wet: 0.75 },
       hum: { bed: 0.05, voices: 0.11, pitch: 0, bright: 1600 },
       ambience: 'level0',
-      card: { name: 'LEVEL 0', title: 'The Lobby', delay: 80 },
+      card: { name: 'LEVEL 0', title: 'The Lobby', delay: 45, hint: 'Somewhere the lights have died. There is a way down in the dark.' },
+      noclip: { to: 'level1', after: 120, bump: 0.04, bumpMax: 0.3, ramp: 600, fall: 0.004, fallAfter: 240 },
       sanityAlone: 1,
       director: {
         sounds: ['doorslam', 'thump', 'drag', 'knock', 'voice_murmur', 'footsteps', 'creak', 'thump'],
@@ -259,15 +260,20 @@ export class Level0 {
 
     // --- exit: a dark hole in the floor, deep inside the failed lights ---
     let hole = null;
-    const lt = this.game.levelTime || 0;
-    if (!this.menu && !spawnSafe && lt > 140) {
-      const darkCells = [];
-      for (let i = 0; i < N * N; i++) if (g.cell[i] & DARK && !(g.cell[i] & CORR)) darkCells.push(i);
-      if (darkCells.length > 4 && rng.chance(Math.min(0.9, 0.35 + (lt - 140) / 600))) {
-        const c = rng.pick(darkCells);
+    if (!this.menu && !spawnSafe && rng.chance(0.4)) {
+      const cands = [];
+      for (let z = 2; z < N - 2; z++) for (let x = 2; x < N - 2; x++) if (!(g.cell[z * N + x] & CORR)) cands.push(z * N + x);
+      if (cands.length) {
+        const c = rng.pick(cands);
         const x = c % N, z = (c / N) | 0;
         g.cell[c] |= HOLE;
-        if (lmap[c] >= 0) lights[lmap[c]].dead = true;
+        // the lights around it have died
+        for (let dz = -1; dz <= 1; dz++)
+          for (let dx = -1; dx <= 1; dx++) {
+            const cc = (z + dz) * N + x + dx;
+            g.cell[cc] |= DARK;
+            if (lmap[cc] >= 0) lights[lmap[cc]].dead = true;
+          }
         hole = { x, z };
         const hx0 = ox + x * S, hz0 = oz + z * S;
         zones.push({ minX: hx0 + 0.25, maxX: hx0 + S - 0.25, minZ: hz0 + 0.25, maxZ: hz0 + S - 0.25, type: 'hole', exit: 'level1' });
@@ -311,6 +317,7 @@ export class Level0 {
           mb.vface('pit', x0, z0 + S, x0, z0, -12, 0, 1, 0, { su: 1, sv: 1 });
           mb.vface('pit', x0 + S, z0, x0 + S, z0 + S, -12, 0, -1, 0, { su: 1, sv: 1 });
           mb.flat('pit', x0, z0, x0 + S, z0 + S, -12, true, { step: 2 });
+          emitters.push({ x: x0 + S / 2, y: -0.5, z: z0 + S / 2, build: EMIT.pit, opts: { range: 26, gain: 0.7, reverb: 0.5 } });
           // ragged carpet edge
           for (let i = 0; i < 4; i++) {
             const e = 0.08 + rng.next() * 0.15;
