@@ -69,6 +69,10 @@ export class Game {
     this.periphT = 30;
 
     this.input.onKey = (code, e) => this._onKey(code, e);
+    // clicking the game captures the mouse again (after Esc, a note, the inventory...)
+    this.input.onCanvasClick = () => {
+      if ((this.state === 'play' || this.state === 'intro') && !this.paused && !this.ui.modal && !this.input.locked) this.input.lock();
+    };
     this.input.onLockChange = (locked) => {
       if (!locked && (this.state === 'play' || this.state === 'intro') && !this.ui.modal && !this.seq?.noPause) this.pause();
     };
@@ -338,6 +342,7 @@ export class Game {
 
   resume() {
     this.paused = false;
+    this.input.consumeMouse();
     this.ui.hidePause();
     this.audio.setMuffle(20000, 0.3);
     this.audio.fadeWorld(1, 0.3);
@@ -512,7 +517,11 @@ export class Game {
 
     // look
     const [mx, my] = input.consumeMouse();
-    if ((input.locked || input.lockFailed) && !this.ui.modal) p.look(mx, my, set.get('sensitivity'), set.get('invertY'));
+    if ((input.locked || input.lockFailed) && !this.ui.modal) {
+      p.look(mx, my, set.get('sensitivity'), set.get('invertY'));
+      const [ex, ey] = input.edgeTurn();
+      if (ex || ey) p.look(ex * dt * 1100, ey * dt * 700, set.get('sensitivity'), set.get('invertY'));
+    }
 
     // ui keys
     if (!this.ui.modal && !p.frozen) {
