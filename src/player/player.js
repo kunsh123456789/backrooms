@@ -122,10 +122,10 @@ export class Player {
     this.pos.z += this.vel.z * dt;
     const headY = this.pos.y + this.currentEye() + 0.1;
     const hitWall = world.collide(this.pos, this.radius, this.pos.y + 0.35, headY);
-    this.pushT = hitWall && len > 0 ? (this.pushT || 0) + dt : 0;
     const moved = Math.hypot(this.pos.x - prevX, this.pos.z - prevZ);
     this.speed = moved / Math.max(dt, 1e-4);
     this.moving = this.speed > 0.3;
+    this.pushT = hitWall && fz < 0 && this.speed < 0.5 ? (this.pushT || 0) + dt : 0;
 
     // --- floor / gravity ---
     const fl = world.floorAt(this.pos.x, this.pos.z, this.pos.y);

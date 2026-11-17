@@ -226,6 +226,7 @@ export class House {
     }
     // the twin's pantry door is shut
     mb.box('p_wood', 8.0, 0, 10 + KDZ - 0.03, 9.0, 2.08, 10 + KDZ + 0.03, { step: 0.5 });
+    colliders.push(box(7.9, 0, 10 + KDZ - 0.08, 9.1, 2.5, 10 + KDZ + 0.08, { occ: false }));
 
     // --- closet ---
     mb.box('p_crate', 8.7, 0, -13.9, 9.3, 0.5, -6, { step: 1 });
@@ -388,6 +389,9 @@ export class House {
 
   update(dt, game) {
     const p = game.player;
+    const inside = p.pos.x > 0.1 && p.pos.x < 10.9 && p.pos.z > -13.9 && p.pos.z < 10 + KDZ - 0.1;
+    if (inside) (this._lastIn = this._lastIn || new THREE.Vector3()).copy(p.pos);
+    else if (this._lastIn && !this.noclipping) p.pos.copy(this._lastIn);
     if (this.wrong) return this._wrongUpdate(dt, game);
     // the kitchen loop: once inside the twin, quietly put them back in the original
     if (p.pos.z > 10.7 && p.pos.z < 10 + KDZ && p.pos.x > 6 && p.pos.x < 11 && !this._doorsInView(game)) {
@@ -398,9 +402,9 @@ export class House {
     if (this.noclipped) return;
     // the noclip: pushing into a wall long enough, once the house has had its minute
     const t = game.levelTime;
-    const pushNeeded = t > 160 ? 0.25 : t > 50 ? 0.9 : 99;
+    const pushNeeded = t > 240 ? 0.7 : t > 60 ? 1.3 : 99;
     const corner = p.pos.x > 10.3 && p.pos.z > 4 && p.pos.z < 5.3;
-    if ((p.pushT > pushNeeded || (corner && p.pushT > 0.35 && t > 20)) && !game.seq) {
+    if ((p.pushT > pushNeeded || (corner && p.pushT > 0.5 && t > 20)) && !game.seq) {
       this.noclipped = true;
       game.seq = { kind: 'noclip', gen: this._noclip(game), wait: 0, noPause: true };
     }
