@@ -47,7 +47,7 @@ export class Level2 {
       reverb: { small: 0.6, medium: 1.4, large: 2.6, damp: 6000, dampEnd: 1800, metallic: 0.8, wet: 1.0 },
       hum: { bed: 0.012, voices: 0.05, pitch: -500, bright: 900 },
       ambience: 'level2',
-      card: { name: 'LEVEL 2', title: 'Pipe Dreams', delay: 30, hint: 'Listen for the drone. A red door waits at the end of a tunnel.' },
+      card: { name: 'LEVEL 2', title: 'Pipe Dreams', delay: 30, hint: 'Listen for the drone. A red door waits at the end of a tunnel. Hold H to find it.' },
       noclip: { to: 'levelRun', after: 60, bump: 0.05, bumpMax: 0.35, ramp: 400, fall: 0.004, fallAfter: 150 },
       sanityAlone: 1.2,
       voidTex: ['tunnelwall', 'rust', 'grate'],
@@ -130,7 +130,8 @@ export class Level2 {
     // red door at a dead end, once you've been down here a while
     let red = null;
     const lt = this.game.levelTime || 0;
-    if (!spawnChunk && rng.chance(0.42)) {
+    const forced = Math.abs(cx) + Math.abs(cz) === 1; // an exit is always one chunk away from where you arrive
+    if (!spawnChunk && (forced || rng.chance(0.42))) {
       void lt;
       const dead = [];
       for (let z = 1; z < N - 1; z++) for (let x = 1; x < N - 1; x++) if (openCount(g, x, z) === 1) dead.push([x, z]);
@@ -194,6 +195,10 @@ export class Level2 {
       dispose,
       update: steams.length ? (dt) => steams.forEach((s) => s.update(dt)) : null,
     };
+  }
+
+  exitsOf(lay) {
+    return lay.red ? [{ x: lay.red.x + lay.red.nx * 0.5, z: lay.red.z + lay.red.nz * 0.5, label: 'the red door' }] : [];
   }
 
   surfaceAt(x, z, world) {

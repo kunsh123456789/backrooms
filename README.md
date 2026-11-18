@@ -26,6 +26,7 @@ much of the game is sound.
 | Tab | Pockets (inventory, notes, journal) |
 | Q | Drink Almond Water |
 | R | Replace flashlight battery |
+| H (hold) | Find the way out |
 | Esc | Pause / settings |
 
 There's no HUD. You hear your stamina in your breathing and see it as tunnel
@@ -72,12 +73,13 @@ to breathe, footsteps follow you and the hum starts to sound like words.
 - **Camcorder post-processing** (`src/gfx/post.js`): HDR scene at reduced
   resolution, centre-weighted auto-exposure that adapts slowly, bloom, barrel
   distortion, chromatic aberration, VHS chroma bleed, tracking bands, gain noise
-  that rises in the dark, glitches tied to sanity, and a feedback smear for the
-  noclip fall.
-- **Audio** (`src/audio/`). Everything is synthesised at startup with no audio
-  files. That covers footsteps per surface, breathing, formant-synthesised
-  voices, door slams, drags, clanks, and the reverb impulse responses
-  themselves. Three convolution reverbs are cross-faded by room size, which is
+  that rises in the dark, glitches tied to sanity, and a feedback smear for falls between levels.
+- **Audio** (`src/audio/`). Footsteps, doors, creaks, impacts, clicks and some
+  ambience are recorded public-domain sounds in `public/sounds/` (see
+  `CREDITS.md`). Everything else is synthesised at startup: breathing,
+  formant-synthesised voices, drags, the alarm, the party music and the reverb
+  impulse responses themselves. The synthesised versions also play until the
+  recordings finish loading. Three convolution reverbs are cross-faded by room size, which is
   measured with raycasts. The fluorescent hum feeds a pool of spatialised voices
   attached to the nearest lights, synced to their flicker, and it can drop out
   entirely.

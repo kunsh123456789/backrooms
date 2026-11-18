@@ -267,6 +267,10 @@ export class LevelRun {
     }
   }
 
+  extraExits() {
+    return this.exitPos ? [{ x: this.exitPos.x, z: this.exitPos.y, label: 'the light' }] : [];
+  }
+
   surfaceAt() {
     return 'concrete';
   }

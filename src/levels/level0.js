@@ -50,7 +50,7 @@ export class Level0 {
       reverb: { small: 0.35, medium: 0.9, large: 2.2, damp: 4500, dampEnd: 900, wet: 0.75 },
       hum: { bed: 0.05, voices: 0.11, pitch: 0, bright: 1600 },
       ambience: 'level0',
-      card: { name: 'LEVEL 0', title: 'The Lobby', delay: 45, hint: 'Somewhere the lights have died. There is a way down in the dark.' },
+      card: { name: 'LEVEL 0', title: 'The Lobby', delay: 45, hint: 'Somewhere the lights have died. There is a way down in the dark. Hold H to find it.' },
       noclip: { to: 'level1', after: 120, bump: 0.04, bumpMax: 0.3, ramp: 600, fall: 0.004, fallAfter: 240 },
       sanityAlone: 1,
       director: {
@@ -260,7 +260,8 @@ export class Level0 {
 
     // --- exit: a dark hole in the floor, deep inside the failed lights ---
     let hole = null;
-    if (!this.menu && !spawnSafe && rng.chance(0.4)) {
+    const forced = Math.abs(cx) + Math.abs(cz) === 1; // an exit is always one chunk away from where you arrive
+    if (!this.menu && !spawnSafe && (forced || rng.chance(0.4))) {
       const cands = [];
       for (let z = 2; z < N - 2; z++) for (let x = 2; x < N - 2; x++) if (!(g.cell[z * N + x] & CORR)) cands.push(z * N + x);
       if (cands.length) {
@@ -274,6 +275,15 @@ export class Level0 {
             g.cell[cc] |= DARK;
             if (lmap[cc] >= 0) lights[lmap[cc]].dead = true;
           }
+        if (lmap[c] < 0) addLight(x, z);
+        // ...except one, failing, right over the hole: you can see it flicker from far away
+        if (lmap[c] >= 0) {
+          const l = lights[lmap[c]];
+          l.dead = false;
+          l.flicker = FLICKER.DYING;
+          l.base = 1.3;
+          l.buzz = 2.5;
+        }
         hole = { x, z };
         const hx0 = ox + x * S, hz0 = oz + z * S;
         zones.push({ minX: hx0 + 0.25, maxX: hx0 + S - 0.25, minZ: hz0 + 0.25, maxZ: hz0 + S - 0.25, type: 'hole', exit: 'level1' });
@@ -471,6 +481,10 @@ export class Level0 {
     }
   }
 
+  exitsOf(lay) {
+    return lay.hole ? [{ x: lay.ox + lay.hole.x * S + S / 2, z: lay.oz + lay.hole.z * S + S / 2, label: 'a hole in the floor' }] : [];
+  }
+
   surfaceAt(x, z, world, zone) {
     if (zone && zone.surf) return zone.surf;
     const [cx, cz] = world.chunkOf(x, z);
@@ -490,7 +504,7 @@ export class Level0 {
     // fell through the hole
     if (p.pos.y < -3 && !this.exitTriggered) {
       this.exitTriggered = true;
-      game.transitionTo('level1', { style: 'fall' });
+      game.dropInto('level1');
       return;
     }
     // a long walk through failed lights is a way out too
@@ -499,7 +513,7 @@ export class Level0 {
     else this.darkTime = Math.max(0, this.darkTime - dt * (l > 0.15 ? 3 : 0.5));
     if (this.darkTime > 26 && game.levelTime > 200 && !this.exitTriggered) {
       this.exitTriggered = true;
-      game.transitionTo('level1', { style: 'fall' });
+      game.dropInto('level1');
       return;
     }
     this._anomaly(dt, game, world, cx, cz);

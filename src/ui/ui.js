@@ -21,7 +21,8 @@ export class UI {
     this.promptEl = el('div', 'prompt osd');
     this.toastEl = el('div', 'toast osd');
     this.dot = el('div', 'dot');
-    for (const e of [this.message, this.card, this.hintEl, this.promptEl, this.toastEl, this.dot]) root.appendChild(e);
+    this.sense = el('div', 'sense osd', '<div class="arrow">▲</div><div class="txt"></div>');
+    for (const e of [this.message, this.card, this.hintEl, this.promptEl, this.toastEl, this.dot, this.sense]) root.appendChild(e);
     this.menuEl = null;
     this.pauseEl = null;
     this.sel = 0;
@@ -59,6 +60,25 @@ export class UI {
       this.dot.classList.remove('show');
     }
   }
+  /** The way-out indicator. info: {angle, dist, label} | {text} | null */
+  setSense(info) {
+    const s = this.sense;
+    if (!info) {
+      s.classList.remove('show');
+      return;
+    }
+    s.classList.add('show');
+    const arrow = s.firstChild, txt = s.lastChild;
+    if (info.text) {
+      arrow.style.visibility = 'hidden';
+      txt.textContent = info.text;
+      return;
+    }
+    arrow.style.visibility = 'visible';
+    arrow.style.transform = `rotate(${info.angle}rad)`;
+    txt.textContent = `${info.label} · ${Math.round(info.dist)} m`;
+  }
+
   toast(text, dur = 3) {
     this.toastEl.textContent = text;
     this.toastEl.classList.add('show');

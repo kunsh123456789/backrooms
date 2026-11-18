@@ -286,7 +286,7 @@ export class Game {
     this.loadLevel('house');
     this.input.lock();
     this.seq = { kind: 'fadein', gen: this._fadeIn(3), wait: 0 };
-    setTimeout(() => this.ui.hint('WASD move · SHIFT run · C crouch · E interact · F flashlight · TAB pockets', 7), 2500);
+    setTimeout(() => this.ui.hint('WASD move · SHIFT run · E interact · F flashlight · TAB pockets · hold H to find the way out', 7), 2500);
   }
 
   continueGame() {
@@ -553,6 +553,22 @@ export class Game {
     this._updateSanity(dt);
     this._updateAudio(dt);
 
+    // hold H to listen for the way out
+    this._senseT = Math.max(0, (this._senseT || 0) - dt);
+    const sensing = (!this.ui.modal && input.down('KeyH')) || this._senseT > 0;
+    this._senseTick = (this._senseTick || 0) - dt;
+    if (sensing && this._senseTick <= 0) {
+      this._senseTick = 0.08;
+      this.ui.setSense(this._nearestExit());
+    } else if (!sensing && this._senseOn) this.ui.setSense(null);
+    this._senseOn = sensing;
+    if (this._arrivalMsg) {
+      this._arrivalMsg.t -= dt;
+      if (this._arrivalMsg.t <= 0) {
+        if (this.levelId === this._arrivalMsg.level) this.ui.showMessage(this._arrivalMsg.text, 7);
+        this._arrivalMsg = null;
+      }
+    }
     // interaction prompt
     const it = this.ui.modal ? null : this._interact();
     this.ui.setPrompt(it ? it.prompt : null);
@@ -562,6 +578,7 @@ export class Game {
     if (card && !this.cardShown && this.levelTime > card.delay) {
       this.cardShown = true;
       this.ui.levelCard(card.name, card.title, card.hint);
+      this._senseT = 8;
     }
   }
 
@@ -601,61 +618,53 @@ export class Game {
   noclip(kind) {
     const nc = this.level.config.noclip;
     if (!nc || this.seq) return;
-    this.seq = { kind: 'transition', noPause: true, wait: 0, gen: this._noclipSeq(kind, nc.to, nc.message) };
+    this.dropInto(nc.to, nc.message);
+    void kind;
   }
 
-  *_noclipSeq(kind, to, message) {
-    const p = this.player, a = this.audio, fx = this.fx;
-    p.frozen = true;
-    p.lookFrozen = true;
-    const fwd = this.camera.getWorldDirection(new THREE.Vector3());
-    fwd.y = 0;
-    fwd.normalize();
-    // the sound just stops
-    a.fadeWorld(0, 0.3);
-    a.setMuffle(350, 0.2);
-    if (kind === 'wall') {
-      // you keep walking and the wall isn't there
-      for (let t = 0; t < 0.9; t += 0.03) {
-        const k = t / 0.9;
-        p.camOffset.copy(fwd).multiplyScalar(0.3 + k * 1.6);
-        p.camOffset.y = -k * k * 0.6;
-        yield 0.03;
-      }
-    } else {
-      // the floor stops being there
-      for (let t = 0; t < 0.7; t += 0.03) {
-        const k = t / 0.7;
-        p.camOffset.set(fwd.x * k * 0.4, -k * k * 2.6, fwd.z * k * 0.4);
-        p.pitch = Math.max(-0.5, p.pitch - 0.02);
-        yield 0.03;
-      }
-    }
-    p.camOffset.set(0, 0, 0);
-    this.voidFall.begin(this.level.config.voidTex || ['wallpaper0', 'carpet0', 'ceiling0']);
-    fx.smear = 0.85;
-    a.play('whoosh', { gain: 0.25, bus: 'ui', rate: 0.75 });
-    yield 3.2;
-    fx.fade = 1;
-    fx.fadeColor.setRGB(0, 0, 0);
-    this.voidFall.end();
-    fx.smear = 0;
-    yield 3.0; // black, and nothing at all
+  /**
+   * A noclip: no transition at all. One frame you're here, the next you're
+   * standing somewhere else, facing the same way.
+   */
+  dropInto(to, message = null) {
+    const p = this.player;
+    const yaw = p.yaw, pitch = p.pitch;
     this.state = 'play';
-    this.loadLevel(to);
+    this.seq = null;
+    this.fx.fade = 0;
+    this.fx.smear = 0;
+    this.voidFall.end();
     p.frozen = false;
     p.lookFrozen = false;
-    a.setMuffle(20000, 0.1);
-    a.fadeWorld(1, 2.5);
-    for (let t = 0; t < 4; t += 0.05) {
-      fx.fade = 1 - t / 4;
-      yield 0.05;
-    }
-    fx.fade = 0;
-    if (message) {
-      yield 10;
-      if (this.levelId === to) this.ui.showMessage(message, 7);
-    }
+    this.loadLevel(to);
+    p.yaw = yaw;
+    p.pitch = pitch;
+    this.audio.setMuffle(20000, 0.05);
+    this.audio.fadeWorld(1, 0.05);
+    this._arrivalMsg = message ? { t: 10, text: message, level: to } : null;
+  }
+
+  /** Nearest known exit relative to the camera: {angle, dist, label} or {text}. */
+  _nearestExit() {
+    const L = this.level;
+    const p = this.player.pos;
+    let best = null, bd = Infinity;
+    const consider = (e) => {
+      const d = Math.hypot(e.x - p.x, e.z - p.z);
+      if (d < bd) {
+        bd = d;
+        best = e;
+      }
+    };
+    if (L.exitsOf) for (const lay of this.world.layouts.values()) if (lay) for (const e of L.exitsOf(lay)) consider(e);
+    if (L.extraExits) for (const e of L.extraExits()) consider(e);
+    if (!best) return { text: L.exitText || 'Nothing nearby. Keep walking.' };
+    const f = this.camera.getWorldDirection(tmpV);
+    const fl = Math.hypot(f.x, f.z) || 1;
+    const fx = f.x / fl, fz = f.z / fl;
+    const tx = best.x - p.x, tz = best.z - p.z;
+    const fwd = tx * fx + tz * fz, right = tx * -fz + tz * fx;
+    return { angle: Math.atan2(right, fwd), dist: bd, label: best.label };
   }
 
   toggleFlashlight() {
@@ -810,7 +819,7 @@ export class Game {
     const ex = clamp(Math.max(p.exertion, p.fear * 0.8), 0, 1);
     const heavy = ex > 0.55;
     const name = `breath_${b.inhale ? 'in' : 'out'}${heavy ? '_h' : ''}`;
-    const gain = 0.05 + ex * 0.4;
+    const gain = ex < 0.25 ? 0.012 : 0.02 + ex * 0.32; // barely there when calm
     const src = this.audio.play(name, { gain, bus: 'self', reverb: 0.15, rate: 0.95 + Math.random() * 0.1, lowpass: 5000 });
     const dur = src ? src.buffer.duration : 1;
     const gap = heavy ? 0.05 + (1 - ex) * 0.2 : b.inhale ? 0.2 + Math.random() * 0.3 : 1.6 + (1 - ex) * 2.2 + Math.random() * 1.2;

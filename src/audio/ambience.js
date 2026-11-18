@@ -19,6 +19,29 @@ function noiseBed(a, name, type, freq, q, gain, dest) {
   return { s, f, g, stop: () => { g.gain.setTargetAtTime(0, a.now, 0.3); setTimeout(() => { try { s.stop(); } catch (e) { /* */ } }, 1500); } };
 }
 
+/** A bed from a recorded loop; starts when the sample has loaded. */
+function sampleBed(a, name, type, freq, gain, rate = 1) {
+  const ctx = a.ctx;
+  const g = ctx.createGain();
+  g.gain.value = 0;
+  const f = ctx.createBiquadFilter();
+  f.type = type;
+  f.frequency.value = freq;
+  f.connect(g).connect(a.amb);
+  let src = null, stopped = false;
+  a.whenLoaded(name).then((arr) => {
+    if (!arr || stopped) return;
+    src = ctx.createBufferSource();
+    src.buffer = arr[0].buf;
+    src.loop = true;
+    src.playbackRate.value = rate;
+    src.connect(f);
+    src.start();
+    g.gain.setTargetAtTime(gain, a.now, 2);
+  });
+  return { g, f, stop: () => { stopped = true; g.gain.setTargetAtTime(0, a.now, 0.3); setTimeout(() => { try { src && src.stop(); } catch (e) { /* */ } }, 1500); } };
+}
+
 function scheduler(rng, minGap, maxGap, fn) {
   let t = rng.range(minGap * 0.3, maxGap);
   return (dt) => {
@@ -78,7 +101,9 @@ export function createAmbience(id, a) {
       o.start();
       g.gain.setTargetAtTime(0.07, a.now, 2);
       parts.push({ stop: () => { g.gain.setTargetAtTime(0, a.now, 0.3); setTimeout(() => o.stop(), 1500); } });
-      parts.push(noiseBed(a, 'loop_brown', 'lowpass', 300, 0.7, 0.08));
+      parts.push(noiseBed(a, 'loop_brown', 'lowpass', 300, 0.7, 0.05));
+      parts.push(sampleBed(a, 'loop_machine', 'lowpass', 900, 0.35, 0.8));
+      parts.push(sampleBed(a, 'loop_drips', 'bandpass', 1800, 0.12));
       let ph = 0;
       tickers.push((dt) => {
         ph += dt;
@@ -95,7 +120,8 @@ export function createAmbience(id, a) {
     }
     case 'level37': {
       // water lapping, a wide gentle wash
-      const lap = noiseBed(a, 'loop_brown', 'bandpass', 500, 0.8, 0.05);
+      parts.push(sampleBed(a, 'loop_water', 'lowpass', 2500, 0.3));
+      const lap = noiseBed(a, 'loop_brown', 'bandpass', 500, 0.8, 0.03);
       parts.push(lap);
       const far = noiseBed(a, 'loop_pink', 'bandpass', 1400, 0.5, 0.012);
       parts.push(far);

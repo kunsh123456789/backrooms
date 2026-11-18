@@ -81,6 +81,7 @@ export class AudioEngine {
     this._buildRumble();
     this._buildSanity();
     this.ready = true;
+    this.loadSamples();
   }
 
   get now() {
@@ -135,10 +136,73 @@ export class AudioEngine {
     this._add('loop_white', [S.noiseLoop(4, 'white', 3)]);
   }
 
+  /**
+   * Recorded CC0 samples (see CREDITS.md). They replace the synthesized
+   * versions as soon as they finish loading; until then the synth plays.
+   */
+  loadSamples(base = 'sounds/') {
+    const M = {
+      step_carpet: ['step_carpet', 5, { rate: 0.92 }],
+      step_wetcarpet: ['step_carpet', 5, { rate: 0.8, gain: 1.1 }],
+      step_housecarpet: ['step_carpet', 5, { rate: 1.0, gain: 0.8 }],
+      step_wood: ['step_wood', 5],
+      step_concrete: ['step_concrete', 5],
+      step_tile: ['step_concrete', 5, { rate: 1.18 }],
+      step_metal: ['step_metal', 5, { rate: 0.85, gain: 0.55 }],
+      doorslam: ['doorslam', 4, { rate: 0.8 }],
+      creak: ['creak', 3],
+      knock: ['knock', 5, { rate: 0.85 }],
+      thump: ['thump', 5, { rate: 0.55 }],
+      clank: ['clank', 8, { rate: 0.75 }],
+      paper: ['paper', 3],
+      bottle: ['bottle', 3, { gain: 0.6, rate: 0.9 }],
+      click: ['click', 4],
+      static: ['static', 4, { gain: 0.6 }],
+      pad: ['pad', 4, { rate: 1.25, gain: 0.7 }],
+      boom: ['boom', 3, { rate: 0.45, gain: 1.2 }],
+      loop_water: ['loop_water', 0],
+      loop_machine: ['loop_machine', 0],
+      loop_drips: ['loop_drips', 0],
+    };
+    this._loaded = this._loaded || new Map();
+    const files = new Map();
+    const get = (f) => {
+      if (!files.has(f)) {
+        files.set(f, fetch(base + f + '.mp3').then((r) => {
+          if (!r.ok) throw new Error(r.status);
+          return r.arrayBuffer();
+        }).then((ab) => this.ctx.decodeAudioData(ab)));
+      }
+      return files.get(f);
+    };
+    for (const [name, [file, n, meta = {}]] of Object.entries(M)) {
+      const list = n ? Array.from({ length: n }, (_, i) => `${file}_${i}`) : [file];
+      const p = Promise.all(list.map(get)).then((bufs) => {
+        // a buffer can be shared by several names with different settings, so wrap it
+        const arr = bufs.map((b) => ({ buf: b, rate: meta.rate ?? 1, gain: meta.gain ?? 1 }));
+        this.buffers.set(name, arr);
+        return arr;
+      }).catch(() => null);
+      this._loaded.set(name, p);
+    }
+  }
+
+  /** Resolves when a recorded sample set is ready (or null if unavailable). */
+  whenLoaded(name) {
+    return (this._loaded && this._loaded.get(name)) || Promise.resolve(null);
+  }
+
   buffer(name) {
+    const e = this.entry(name);
+    return e ? e.buf : null;
+  }
+
+  /** {buf, rate, gain} for a name (synth buffers have rate/gain 1). */
+  entry(name) {
     const arr = this.buffers.get(name);
-    if (!arr) return null;
-    return arr[Math.floor(this.rng.next() * arr.length)];
+    if (!arr || !arr.length) return null;
+    const x = arr[Math.floor(this.rng.next() * arr.length)];
+    return x instanceof AudioBuffer ? { buf: x, rate: 1, gain: 1 } : x;
   }
 
   // ---------- reverb ----------
@@ -173,8 +237,11 @@ export class AudioEngine {
   /** Non-spatial playback. */
   play(name, { gain = 1, rate = 1, bus = 'self', reverb = 0.2, detune = 0, when = 0, lowpass = 0 } = {}) {
     if (!this.ready) return null;
-    const buf = typeof name === 'string' ? this.buffer(name) : name;
-    if (!buf) return null;
+    const en = typeof name === 'string' ? this.entry(name) : { buf: name, rate: 1, gain: 1 };
+    if (!en) return null;
+    const buf = en.buf;
+    rate *= en.rate;
+    gain *= en.gain;
     const ctx = this.ctx;
     const src = ctx.createBufferSource();
     src.buffer = buf;
@@ -204,8 +271,11 @@ export class AudioEngine {
   /** Spatial playback at a world position. */
   playAt(name, pos, { gain = 1, rate = 1, reverb = 0.5, ref = 2, lowpass = 0, detune = 0, when = 0, rolloff = 1 } = {}) {
     if (!this.ready) return null;
-    const buf = typeof name === 'string' ? this.buffer(name) : name;
-    if (!buf) return null;
+    const en = typeof name === 'string' ? this.entry(name) : { buf: name, rate: 1, gain: 1 };
+    if (!en) return null;
+    const buf = en.buf;
+    rate *= en.rate;
+    gain *= en.gain;
     const ctx = this.ctx;
     const src = ctx.createBufferSource();
     src.buffer = buf;

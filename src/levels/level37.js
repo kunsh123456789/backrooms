@@ -45,7 +45,7 @@ export class Level37 {
       reverb: { small: 2.2, medium: 4.5, large: 7.5, damp: 8000, dampEnd: 2500, wet: 1.5 },
       hum: { bed: 0, voices: 0 },
       ambience: 'level37',
-      card: { name: 'LEVEL 37', title: 'The Poolrooms', delay: 35, hint: 'A plain wooden door. Listen for a clock ticking.' },
+      card: { name: 'LEVEL 37', title: 'The Poolrooms', delay: 35, hint: 'A plain wooden door. Listen for a clock ticking. Hold H to find it.' },
       sanityAlone: 0.7,
       noEntities: true,
       rumble: true,
@@ -110,7 +110,8 @@ export class Level37 {
     // the door home
     let door = null;
     const lt = this.game.levelTime || 0;
-    if (!spawnChunk && lt > 30 && rng.chance(0.32)) {
+    const forced = Math.abs(cx) + Math.abs(cz) === 1; // an exit is always one chunk away from where you arrive
+    if (!spawnChunk && (forced || (lt > 30 && rng.chance(0.32)))) {
       const cand = walls.filter((w) => w.b - w.a >= 1);
       if (cand.length) {
         const w = rng.pick(cand);
@@ -180,6 +181,10 @@ export class Level37 {
     }
     spawnItems(lay.items, world, this.game, extra, inter);
     return { extra, interactables: inter, zones, dispose: spawnEmitters(emitters, this.game) };
+  }
+
+  exitsOf(lay) {
+    return lay.door ? [{ x: lay.door.x + lay.door.nx * 0.5, z: lay.door.z + lay.door.nz * 0.5, label: 'the wooden door' }] : [];
   }
 
   surfaceAt() {

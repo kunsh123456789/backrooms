@@ -42,7 +42,7 @@ export class Level4 {
       reverb: { small: 0.35, medium: 0.9, large: 1.8, damp: 4500, dampEnd: 1200, wet: 0.6 },
       hum: { bed: 0.02, voices: 0.045, pitch: 30, bright: 2000 },
       ambience: 'level4',
-      card: { name: 'LEVEL 4', title: 'Abandoned Office', delay: 30, hint: 'One of the windows is open. You can feel the draft.' },
+      card: { name: 'LEVEL 4', title: 'Abandoned Office', delay: 30, hint: 'One of the windows is open. You can feel the draft. Hold H to find it.' },
       noclip: { to: 'level37', after: 60, bump: 0.05, bumpMax: 0.35, ramp: 400, fall: 0.004, fallAfter: 150 },
       sanityAlone: 0.8,
       voidTex: ['officewall', 'officecarpet', 'cubicle'],
@@ -73,7 +73,8 @@ export class Level4 {
     const spawnChunk = cx === 0 && cz === 0;
     // the void: blocks of nothing, seen through windows
     const voids = [];
-    for (let i = 0; i < rng.int(0, 3); i++) {
+    const forced = Math.abs(cx) + Math.abs(cz) === 1;
+    for (let i = 0; i < (forced ? 2 : rng.int(0, 3)); i++) {
       const w = rng.int(2, 4), d = rng.int(2, 4);
       const x0 = rng.int(1, N - w - 1), z0 = rng.int(1, N - d - 1);
       if (spawnChunk && x0 <= 6 && x0 + w >= 4 && z0 <= 6 && z0 + d >= 4) continue;
@@ -163,7 +164,7 @@ export class Level4 {
     const lt = this.game.levelTime || 0;
     const winWalls = walls.filter((w) => w.kind === WINDOW);
     let openWin = null;
-    if (!spawnChunk && winWalls.length && rng.chance(0.5)) {
+    if (!spawnChunk && winWalls.length && (forced || rng.chance(0.5))) {
       const w = rng.pick(winWalls);
       openWin = { w, idx: rng.int(w.a, w.b + 1) };
     }
@@ -284,6 +285,14 @@ export class Level4 {
     }
     spawnItems(lay.items, world, this.game, extra, inter);
     return { extra, interactables: inter, dispose: spawnEmitters(emitters, this.game) };
+  }
+
+  exitsOf(lay) {
+    if (!lay.openWin) return [];
+    const { w, idx } = lay.openWin;
+    const b = w.box;
+    if (w.axis === 'h') return [{ x: lay.ox + idx * S + S / 2, z: (b.minZ + b.maxZ) / 2, label: 'the open window' }];
+    return [{ x: (b.minX + b.maxX) / 2, z: lay.oz + idx * S + S / 2, label: 'the open window' }];
   }
 
   surfaceAt() {

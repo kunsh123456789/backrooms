@@ -46,7 +46,7 @@ export class LevelFun {
       reverb: { small: 0.5, medium: 1.2, large: 2.0, damp: 6000, dampEnd: 2000, wet: 0.7 },
       hum: { bed: 0, voices: 0 },
       ambience: 'levelFun',
-      card: { name: 'LEVEL FUN =)', title: 'Welcome to the party!', delay: 20, hint: 'Find the room where the lights are off.' },
+      card: { name: 'LEVEL FUN =)', title: 'Welcome to the party!', delay: 20, hint: 'Find the room where the lights are off. Hold H to find it.' },
       noclip: { to: 'level37', after: 40, bump: 0.08, bumpMax: 0.4, ramp: 300, fall: 0.005, fallAfter: 90 },
       sanityAlone: 1.6,
       rumble: false,
@@ -74,7 +74,8 @@ export class LevelFun {
     // the exit: a room where the lights are off
     let exit = null;
     const lt = this.game.levelTime || 0;
-    if (!spawnChunk && rng.chance(0.45) && lt >= 0) {
+    const forced = Math.abs(cx) + Math.abs(cz) === 1; // an exit is always one chunk away from where you arrive
+    if (!spawnChunk && (forced || rng.chance(0.45)) && lt >= 0) {
       const x = rng.int(2, N - 2), z = rng.int(2, N - 2);
       for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) g.cell[(z + dz) * N + x + dx] |= DARK;
       const d = wallDirs(g, x, z);
@@ -174,6 +175,10 @@ export class LevelFun {
       const n = game.entities.list.filter((e) => e instanceof Entities.Partygoer).length;
       if (n < 3) game.entities.spawn('partygoer', 'encounter');
     }
+  }
+
+  exitsOf(lay) {
+    return lay.exit ? [{ x: lay.ox + lay.exit.x * S + S / 2, z: lay.oz + lay.exit.z * S + S / 2, label: 'the dark room' }] : [];
   }
 
   surfaceAt() {

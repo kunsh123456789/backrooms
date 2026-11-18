@@ -378,6 +378,10 @@ export class House {
     }
   }
 
+  get exitText() {
+    return 'There is no door out of here. Walk into the walls.';
+  }
+
   surfaceAt(x, z) {
     for (const s of this.surfaces || []) if (x >= s.x0 && x < s.x1 && z >= s.z0 && z < s.z1) return s.s;
     return 'wood';

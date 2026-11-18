@@ -46,7 +46,7 @@ export class Level1 {
       reverb: { small: 1.0, medium: 2.6, large: 5.0, damp: 5000, dampEnd: 700, wet: 1.1 },
       hum: { bed: 0.025, voices: 0.07, pitch: -40, bright: 1200 },
       ambience: 'level1',
-      card: { name: 'LEVEL 1', title: 'Habitable Zone', delay: 30, hint: 'Follow the green exit signs to the stairwells. They go down.' },
+      card: { name: 'LEVEL 1', title: 'Habitable Zone', delay: 30, hint: 'Follow the green exit signs to the stairwells. They go down. Hold H to find it.' },
       noclip: { to: 'level2', after: 60, bump: 0.05, bumpMax: 0.35, ramp: 400, fall: 0.004, fallAfter: 150 },
       sanityAlone: 1,
       roomScale: 1.3,
@@ -165,11 +165,11 @@ export class Level1 {
     // structures: the stairwell down, and (rarely) a door with balloons
     const structs = [];
     void lt;
-    if (!spawnChunk && rng.chance(0.38)) structs.push({ kind: 'stairs' });
+    const forced = Math.abs(cx) + Math.abs(cz) === 1; // an exit is always one chunk away from where you arrive
+    if (!spawnChunk && (forced || rng.chance(0.38))) structs.push({ kind: 'stairs' });
     else if (!spawnChunk && rng.chance(0.08)) structs.push({ kind: 'party' });
     for (const s of structs) {
-      const sp = freeSpot();
-      if (!sp) continue;
+      const sp = freeSpot() || [ox + CH / 2 + 1, oz + CH / 2 + 1];
       // snap to between pillars
       s.x = ox + (Math.floor((sp[0] - ox) / 6) * 6 + 3);
       s.z = oz + (Math.floor((sp[1] - oz) / 6) * 6 + 3);
@@ -275,6 +275,13 @@ export class Level1 {
     }
     spawnItems(lay.items, world, this.game, extra, inter);
     return { extra, interactables: inter, zones, dispose: spawnEmitters(emitters, this.game) };
+  }
+
+  exitsOf(lay) {
+    return lay.structs.filter((s) => s.kind === 'stairs' && s.x !== undefined).map((s) => {
+      const d = [[0, -1], [1, 0], [0, 1], [-1, 0]][s.dir];
+      return { x: s.x + d[0] * 1.6, z: s.z + d[1] * 1.6, label: 'the stairwell' };
+    });
   }
 
   surfaceAt(x, z, world, zone) {
