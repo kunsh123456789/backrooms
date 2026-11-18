@@ -47,7 +47,7 @@ export class Level4 {
       sanityAlone: 0.8,
       voidTex: ['officewall', 'officecarpet', 'cubicle'],
       director: {
-        sounds: ['doorslam', 'knock', 'footsteps', 'voice_hello', 'creak'],
+        sounds: ['doorslam', 'knock', 'footsteps', 'voice_hello', 'creak_door'],
         lightEvents: true,
         humDrop: true,
         glimpse: ['faceling', 'faceling'],

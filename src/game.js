@@ -415,7 +415,7 @@ export class Game {
     if (p.inv.almond <= 0) return false;
     p.inv.almond--;
     p.sanity = Math.min(100, p.sanity + 35);
-    this.audio.play('bottle', { gain: 0.6, rate: 0.8 });
+    this.audio.play('gulp', { gain: 0.7 });
     this.ui.toast('It tastes faintly sweet.');
     return true;
   }
@@ -675,7 +675,7 @@ export class Game {
       return;
     }
     p.flashlight = !p.flashlight;
-    this.audio.play('click', { gain: 0.55, rate: p.flashlight ? 1 : 0.85 });
+    this.audio.play('flashclick', { gain: 0.7, rate: p.flashlight ? 1 : 0.85 });
   }
 
   _updateFlashlight(dt) {
@@ -814,6 +814,19 @@ export class Game {
   _breathe(dt) {
     const p = this.player;
     const b = this.breath;
+    const a = this.audio;
+    if (!b.calm && a.buffers.get('breath_calm')?.[0]?.buf) {
+      b.calm = a.loopLayer('breath_calm');
+      b.heavy = a.loopLayer('breath_heavy');
+    }
+    if (b.calm && b.heavy) {
+      const ex = clamp(Math.max(p.exertion, p.fear * 0.8), 0, 1);
+      const t = a.now;
+      b.calm.gain.gain.setTargetAtTime(0.1 * (1 - ex) + 0.03, t, 0.6);
+      b.heavy.gain.gain.setTargetAtTime(Math.max(0, ex - 0.35) * 0.7, t, 0.6);
+      b.heavy.src.playbackRate.setTargetAtTime(0.95 + ex * 0.12, t, 1);
+      return;
+    }
     b.t -= dt;
     if (b.t > 0) return;
     const ex = clamp(Math.max(p.exertion, p.fear * 0.8), 0, 1);

@@ -160,6 +160,19 @@ export function createAmbience(id, a) {
         if (!started && st.alarm) {
           started = true;
           g.gain.setTargetAtTime(0.05, a.now, 0.05);
+          const rec = a.buffers.get('alarm_rec')?.[0]?.buf;
+          if (rec) {
+            o.disconnect();
+            const s2 = ctx.createBufferSource();
+            s2.buffer = rec;
+            s2.loop = true;
+            const g2 = ctx.createGain();
+            g2.gain.value = 0.35;
+            s2.connect(g2).connect(g);
+            g.gain.setTargetAtTime(0.5, a.now, 0.05);
+            s2.start();
+            parts.push({ stop: () => { try { s2.stop(); } catch (e) { /* */ } } });
+          }
         }
         if (!started) return;
         const ph = (t % 1.2) / 1.2;
@@ -276,6 +289,17 @@ function createPartyMusic(a) {
 // --- emitter graph builders ---
 export const EMIT = {
   fridge(ctx, out, a) {
+    const rec = a.buffers.get('fridge_rec')?.[0]?.buf;
+    if (rec) {
+      const s = ctx.createBufferSource();
+      s.buffer = rec;
+      s.loop = true;
+      const g = ctx.createGain();
+      g.gain.value = 1.0;
+      s.connect(g).connect(out);
+      s.start(ctx.currentTime, Math.random() * rec.duration * 0.8);
+      return () => { s.stop(); };
+    }
     const o1 = ctx.createOscillator();
     o1.frequency.value = 50;
     const o2 = ctx.createOscillator();
@@ -343,6 +367,18 @@ export const EMIT = {
     return () => { o1.stop(); o2.stop(); };
   },
   steam(ctx, out, a) {
+    const rec = a.buffers.get('steam_rec')?.[0]?.buf;
+    if (rec) {
+      const s = ctx.createBufferSource();
+      s.buffer = rec;
+      s.loop = true;
+      const g = ctx.createGain();
+      g.gain.value = 0.5;
+      s.connect(g).connect(out);
+      s.start(ctx.currentTime, Math.random() * rec.duration * 0.8);
+      const iv = setInterval(() => g.gain.setTargetAtTime(Math.random() < 0.5 ? 0.15 : 0.6, ctx.currentTime, 0.4), 2200);
+      return () => { s.stop(); clearInterval(iv); };
+    }
     const s = a.loopSource('loop_white');
     const hp = ctx.createBiquadFilter();
     hp.type = 'highpass';

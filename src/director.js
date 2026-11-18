@@ -145,6 +145,10 @@ export class Director {
   _distantSteps() {
     const g = this.game;
     const a = g.audio;
+    if (a.buffers.get('footsteps_far')?.[0]?.buf) {
+      a.distant('footsteps_far', { minD: 18, maxD: 32, gain: 0.55 });
+      return;
+    }
     const ang = this.rng.next() * Math.PI * 2;
     const d = this.rng.range(20, 35);
     const surf = g.player.surface === 'water' ? 'tile' : g.player.surface;

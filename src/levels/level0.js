@@ -54,7 +54,7 @@ export class Level0 {
       noclip: { to: 'level1', after: 120, bump: 0.04, bumpMax: 0.3, ramp: 600, fall: 0.004, fallAfter: 240 },
       sanityAlone: 1,
       director: {
-        sounds: ['doorslam', 'thump', 'drag', 'knock', 'voice_murmur', 'footsteps', 'creak', 'thump'],
+        sounds: ['doorslam', 'thump', 'drag', 'knock', 'voice_murmur', 'footsteps', 'creak_door', 'thump'],
         lightEvents: true,
         humDrop: true,
         glimpse: ['faceling', 'smiler'],

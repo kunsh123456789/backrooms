@@ -52,7 +52,7 @@ export class Level1 {
       roomScale: 1.3,
       voidTex: ['concrete', 'blockwall', 'pillar'],
       director: {
-        sounds: ['clank', 'doorslam', 'drag', 'thump', 'footsteps', 'voice_hello', 'creak'],
+        sounds: ['clank', 'doorslam', 'drag', 'thump', 'footsteps', 'voice_hello', 'creak_door'],
         lightEvents: true,
         humDrop: true,
         glimpse: ['faceling', 'faceling', 'hound'],

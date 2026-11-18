@@ -82,6 +82,7 @@ export class AudioEngine {
     this._buildSanity();
     this.ready = true;
     this.loadSamples();
+    this._useRecordedHum();
   }
 
   get now() {
@@ -163,6 +164,33 @@ export class AudioEngine {
       loop_water: ['loop_water', 0],
       loop_machine: ['loop_machine', 0],
       loop_drips: ['loop_drips', 0],
+      // from Freesound (CC0)
+      breath_calm: ['breath_calm', 0],
+      breath_heavy: ['breath_heavy', 0],
+      hum_rec: ['hum_rec', 0],
+      fridge_rec: ['fridge', 0],
+      steam_rec: ['steam', 0],
+      alarm_rec: ['alarm', 0],
+      flick: ['flick', 4, { gain: 0.8 }],
+      lightclunk: ['lightclunk', 2, { rate: 0.8 }],
+      voice_help: ['voice_help', 1, { rate: 0.95 }],
+      voice_helpme: ['voice_help', 1, { rate: 0.9 }],
+      voice_murmur: ['voice_murmur', 1],
+      voice_giggle: ['giggle', 2, { rate: 0.9 }],
+      whisper: ['whisper', 3],
+      growl: ['growl', 2, { rate: 0.62 }],
+      pant: ['pant', 1, { rate: 0.75 }],
+      drag: ['drag', 1, { rate: 0.85 }],
+      clocktick: ['clocktick', 2],
+      gurgle: ['gurgle', 1],
+      roar: ['roar', 2, { rate: 0.85 }],
+      step_water: ['step_water', 5],
+      drip: ['drip', 3],
+      gulp: ['gulp', 1],
+      flashclick: ['flashclick', 2],
+      pop: ['pop', 1],
+      footsteps_far: ['footsteps_far', 1],
+      creak_door: ['creakdoor', 2, { rate: 0.9 }],
     };
     this._loaded = this._loaded || new Map();
     const files = new Map();
@@ -185,6 +213,36 @@ export class AudioEngine {
       }).catch(() => null);
       this._loaded.set(name, p);
     }
+  }
+
+  /** Once the recorded fluorescent buzz loads, it becomes the hum; the synth stays underneath, quieter. */
+  _useRecordedHum() {
+    this.whenLoaded('hum_rec').then((arr) => {
+      if (!arr) return;
+      const s = this.ctx.createBufferSource();
+      s.buffer = arr[0].buf;
+      s.loop = true;
+      const g = this.ctx.createGain();
+      g.gain.value = 1.6;
+      s.connect(g).connect(this.humSrc);
+      s.start();
+      this.humRec = s;
+      this.humSynth.gain.setTargetAtTime(0.35, this.now, 1);
+    });
+  }
+
+  /** A persistent looping layer on a bus (e.g. breathing), gain set by the caller. */
+  loopLayer(name, bus = 'self') {
+    const arr = this.buffers.get(name);
+    if (!arr || !arr.length || arr[0] instanceof AudioBuffer) return null;
+    const s = this.ctx.createBufferSource();
+    s.buffer = arr[0].buf;
+    s.loop = true;
+    const g = this.ctx.createGain();
+    g.gain.value = 0;
+    s.connect(g).connect(this[bus] || this.self);
+    s.start(this.now, Math.random() * s.buffer.duration * 0.9);
+    return { src: s, gain: g };
   }
 
   /** Resolves when a recorded sample set is ready (or null if unavailable). */
@@ -358,6 +416,8 @@ export class AudioEngine {
   _buildHum() {
     const ctx = this.ctx;
     this.humSrc = ctx.createGain();
+    this.humSynth = ctx.createGain();
+    this.humSynth.connect(this.humSrc);
     this.humOsc = [];
     const parts = [
       [60, 0.18, 'sine'], [120, 0.5, 'sine'], [180, 0.12, 'sine'], [240, 0.16, 'sine'], [360, 0.05, 'sine'],
@@ -368,7 +428,7 @@ export class AudioEngine {
       o.frequency.value = f;
       const gg = ctx.createGain();
       gg.gain.value = g;
-      o.connect(gg).connect(this.humSrc);
+      o.connect(gg).connect(this.humSynth);
       o.start();
       this.humOsc.push(o);
     }
@@ -382,7 +442,7 @@ export class AudioEngine {
     bp.Q.value = 0.9;
     const sg = ctx.createGain();
     sg.gain.value = 0.06;
-    saw.connect(bp).connect(sg).connect(this.humSrc);
+    saw.connect(bp).connect(sg).connect(this.humSynth);
     saw.start();
     this.humOsc.push(saw);
     // sizzle: noise amplitude-modulated at 120 Hz
@@ -400,7 +460,7 @@ export class AudioEngine {
     const modG = ctx.createGain();
     modG.gain.value = 0.025;
     mod.connect(modG).connect(am.gain);
-    nz.connect(nbp).connect(am).connect(this.humSrc);
+    nz.connect(nbp).connect(am).connect(this.humSynth);
     nz.start();
     mod.start();
     this.humOsc.push(mod);
@@ -464,6 +524,7 @@ export class AudioEngine {
     // pitch wanders a few cents with position and time
     const cents = (this.humBasePitch || 0) + wobble * 9;
     for (const o of this.humOsc) o.detune.setTargetAtTime(cents, t, 0.5);
+    if (this.humRec) this.humRec.detune.setTargetAtTime(cents, t, 0.5);
     for (let i = 0; i < HUM_VOICES; i++) {
       const v = this.humVoices[i];
       const l = nearLights[i];
