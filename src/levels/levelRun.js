@@ -42,7 +42,7 @@ export class LevelRun {
       hum: { bed: 0, voices: 0 },
       ambience: 'levelRun',
       card: { name: 'LEVEL !', title: 'Run For Your Life', delay: 3.5, hint: 'Run toward the light.' },
-      staminaMul: 1.7,
+      staminaMul: 6,
       sanityAlone: 0.5,
       rumble: false,
       director: { off: true },
@@ -68,7 +68,7 @@ export class LevelRun {
         }
         return false;
       };
-      while (cells.length < 82 && ok) {
+      while (cells.length < 60 && ok) {
         const len = rng.int(4, 11);
         for (let i = 0; i < len; i++) {
           const nx = x + DIRS[dir][0], nz = z + DIRS[dir][1];
@@ -83,7 +83,7 @@ export class LevelRun {
         }
         dir = (dir + (rng.chance(0.5) ? 1 : 3)) % 4;
       }
-      if (cells.length >= 70) {
+      if (cells.length >= 52) {
         this.path = cells;
         this.pathSet = set;
         break;
@@ -194,7 +194,7 @@ export class LevelRun {
 
   onEnter(game) {
     this.t = 0;
-    this.chaserS = -14;
+    this.chaserS = -28;
     this.stepT = 0;
     this.roarT = 6;
     this.chaser = chaserModel();
@@ -226,8 +226,10 @@ export class LevelRun {
     }
     if (!this.alarm || this.done) return;
     const me = this._proj(p.pos.x, p.pos.z);
-    // it gets faster the longer this goes on
-    const speed = Math.min(4.3, 3.55 + this.t * 0.006);
+    // Rubber-banded so it always feels close: it closes in fast when you're far
+    // ahead, but anyone sprinting (4.6 m/s) still pulls away once it's near.
+    const gap = me.s - this.chaserS;
+    const speed = gap > 22 ? 4.4 : gap > 10 ? 3.7 : 3.3;
     this.chaserS += speed * dt;
     const cpos = this._at(Math.max(0, this.chaserS));
     let dist = me.s - this.chaserS;

@@ -15,7 +15,7 @@ export const LEVEL_INFO = {
   level2: { codex: true, checkpoint: true },
   level4: { codex: true, checkpoint: true },
   level37: { codex: true, checkpoint: true },
-  levelRun: { codex: true, checkpoint: false },
+  levelRun: { codex: true, checkpoint: true },
   levelFun: { codex: true, checkpoint: true },
 };
 
