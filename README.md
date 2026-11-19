@@ -35,10 +35,12 @@ to breathe, footsteps follow you and the hum starts to sound like words.
 
 ## What's in it
 
-- **Opening, the noclip.** A suburban house at 3 AM. The hallway is too long, the
-  hall closet goes back much too far, the pantry opens onto the kitchen you're
-  standing in, and the clock doesn't always keep time. Walk into a wall and stay
-  there.
+- **Opening: the showroom.** A furniture showroom after closing, with dark
+  display rooms, a stockroom, and stairs down to the basement. At the far end
+  of the basement is a doorway that wasn't there yesterday. Step through it and
+  you're in Level 0. (An original take on the premise of the 2026 *Backrooms*
+  film; nothing is copied from it.) Noclips also happen at random: walk into a
+  wall, or the floor gives way, and you're simply somewhere else.
 - **Level 0, "The Lobby".** Endless procedural yellow rooms, with water damage
   and dead lights. The level is split into districts that span several chunks:
   huge halls with tall ceilings, pillar forests, office-style corridors lined

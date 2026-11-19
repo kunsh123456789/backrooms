@@ -283,7 +283,7 @@ export class Game {
     this.state = 'intro';
     this.fx.fade = 1;
     this.audio.fadeWorld(0, 0.1);
-    this.loadLevel('house');
+    this.loadLevel('showroom');
     this.input.lock();
     this.seq = { kind: 'fadein', gen: this._fadeIn(3), wait: 0 };
     setTimeout(() => this.ui.hint('WASD move · SHIFT run · E interact · F flashlight · TAB pockets · hold H to find the way out', 7), 2500);

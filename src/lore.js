@@ -27,6 +27,7 @@ export const NOTES = [
 
 export const CODEX = {
   levels: {
+    showroom: { name: 'The Showroom', text: 'A furniture store after closing. Display rooms nobody lives in. Stairs down to the basement, and a doorway in the basement wall that was not there yesterday.' },
     house: { name: 'Home', text: 'A house at 3 AM. The fridge hums. The clock ticks, mostly on time. You were thirsty.' },
     level0: { name: 'Level 0 — "The Lobby"', text: 'Mono-yellow wallpaper, damp carpet, fluorescent lights that never turn off. Endless and almost entirely empty. The way forward is reportedly through places where the lights have failed.' },
     level1: { name: 'Level 1 — "Habitable Zone"', text: 'A vast concrete structure like a parking garage that never ends. Cold, damp, lit in patches. Supply crates appear without explanation. Stairwells lead down.' },

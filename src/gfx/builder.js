@@ -332,6 +332,7 @@ export class Baker {
             const dx = l.x - px, dy = l.y - py, dz = l.z - pz;
             const d = Math.sqrt(dx * dx + dy * dy + dz * dz);
             if (d >= l.r) continue;
+            if (l.band && (py < l.band[0] || py > l.band[1])) continue;
             let ndl = (dx * nx + dy * ny + dz * nz) / (d || 1);
             ndl = Math.max(0, ndl * (1 - wrap) + wrap);
             let w = lightFalloff(d, l.r) * ndl * (l.gain ?? 1);
