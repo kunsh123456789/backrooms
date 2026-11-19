@@ -40,7 +40,12 @@ to breathe, footsteps follow you and the hum starts to sound like words.
   standing in, and the clock doesn't always keep time. Walk into a wall and stay
   there.
 - **Level 0, "The Lobby".** Endless procedural yellow rooms, with water damage
-  and dead lights. No entities for the first ten minutes or so. The way out is
+  and dead lights. The level is split into districts that span several chunks:
+  huge halls with tall ceilings, pillar forests, office-style corridors lined
+  with small rooms, mazes and mixed rooms. Rooms are split treemap-style and
+  joined by doorways, wide openings or missing walls (L-shaped rooms), each with
+  its own ceiling height. There are rare landmark rooms: a manila room with one
+  warm lamp, and dim red rooms. No entities for the first ten minutes or so. The way out is
   through pockets where the lights have failed.
 - **Level 1, "Habitable Zone".** A vast concrete parking structure with puddles,
   supply crates and stairwells going down.

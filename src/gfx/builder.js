@@ -292,8 +292,9 @@ function segBox(x0, z0, dx, dz, b) {
 
 /** Bakes light weights per vertex. lights: [{x,y,z,r,slot}] */
 export class Baker {
-  constructor(lights, occluder, { floorY = 0, ceilY = 2.7, aoStrength = 1, wrap = 0.35 } = {}) {
+  constructor(lights, occluder, { floorY = 0, ceilY = 2.7, aoStrength = 1, wrap = 0.35, ceilAt = null } = {}) {
     this.occ = occluder;
+    this.ceilAt = ceilAt;
     this.floorY = floorY;
     this.ceilY = ceilY;
     this.aoStrength = aoStrength;
@@ -362,12 +363,12 @@ export class Baker {
       const kind = g.kind[v];
       if (this.occ && this.aoStrength > 0) {
         if (kind === 0 || kind === 1) {
-          const dist = this.occ.nearest(sx, sz, kind === 0 ? this.floorY + 0.3 : this.ceilY - 0.3, 1.0);
+          const dist = this.occ.nearest(sx, sz, kind === 0 ? this.floorY + 0.3 : py - 0.3, 1.0);
           const s = Math.min(1, dist / 0.9);
           ao = kind === 0 ? 0.5 + 0.5 * s * s * (3 - 2 * s) : 0.75 + 0.25 * s;
         } else if (kind === 2) {
           const h = py - this.floorY;
-          const top = this.ceilY - py;
+          const top = Math.max(0, (this.ceilAt ? this.ceilAt(sx, sz) : this.ceilY) - py);
           ao = (0.55 + 0.45 * Math.min(1, h / 0.6)) * (0.8 + 0.2 * Math.min(1, top / 0.5));
         }
         ao = 1 - (1 - ao) * this.aoStrength;
